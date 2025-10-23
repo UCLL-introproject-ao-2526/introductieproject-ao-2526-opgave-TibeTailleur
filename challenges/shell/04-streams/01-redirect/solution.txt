@@ -1,0 +1,9 @@
+./bar/foo/bar
+./bar/foo/qux
+./bar/qux
+./foo/abc
+./foo/bar/baz
+./foo/bar/log
+./foo/bar/qux
+./foo/baz/qux
+./solution.txt

@@ -1,0 +1,1 @@
+https://hashes.com/en/decrypt/hash

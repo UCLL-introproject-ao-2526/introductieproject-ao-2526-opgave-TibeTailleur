@@ -1,0 +1,17 @@
+[
+  {
+    "country": "france",
+    "capital": "paris",
+    "population": 69
+  },
+  {
+    "country": "belgium",
+    "capital": "brussels",
+    "population": 12
+  },
+  {
+    "country": "netherlands",
+    "capital": "amsterdam",
+    "population": 17
+  }
+]
