@@ -1,0 +1,18 @@
+Reflectie bij video: https://youtu.be/csyL9EC0S0c
+
+- Iedereen maakt fouten, zelfs ervaren programmeurs, bugs en fouten horen erbij.
+- De mythe van de “geniale programmeur” is geeft een fout beeld. Niemand is echt 100x beter dan de rest, samenwerken en leren van anderen is veel belangrijker.
+- Sollicitaties met puzzelvragen of instinkers zeggen niets over iemands echte vaardigheden. Bedrijven die dat doen, begrijpen vaak niet wat goed teamwork is.
+- Programmeren moet leuk en creatief zijn. Mensen leren beter door te experimenteren, dingen te proberen en zelf te ontdekken in plaats van droge theorie.
+- Teamcommunicatie bepaalt de kwaliteit van code. Als teams slecht samenwerken, wordt de software daar meestal ook slechter van.
+- Diversiteit in teams zorgt voor meer innovatie en een gezondere werksfeer.
+- Veel gebruikte werkmethodes (zoals Waterfall) zijn verouderd en zorgen voor stress en inefficiëntie.
+- Goede code is begrijpelijke code, het is belangrijker dat anderen jouw werk kunnen lezen dan dat het “geniaal” is.
+
+Ik vond het een leuke video om naar te kijken, vooral omdat hij op sommige momenten echt grappig en luchtig was. De manier waarop Tef praatte, vond ik tof: hij deed 
+niet alsof hij alle antwoorden had, maar deelde gewoon eerlijk zijn eigen ervaringen. Dat maakte het heel menselijk en herkenbaar.
+
+Ik, en waarschijnlijk veel mensen van Gen Z, zijn het volgens mij met hem eens dat samenwerken belangrijker is dan de slimste of de beste willen zijn. Ook zijn punt over 
+plezier hebben in wat je doet, vind ik superbelangrijk. Als je plezier hebt in je werk of studies, leer je sneller en blijf je gemotiveerd, dat herken ik ook bij mezelf.
+
+Programmeren draait niet om genialiteit, maar om teamwork, plezier en menselijkheid. 

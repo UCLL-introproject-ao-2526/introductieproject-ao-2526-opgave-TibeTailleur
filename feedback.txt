@@ -1,0 +1,26 @@
+Hallo Daan, 
+
+Ik stuur je deze mail om wat feedback te geven over het introductieproject. Ik ben Tibe, ik heb eerder een bachelor Bedrijfsmanagement behaald en volg 
+nu de opleiding Toegepaste Informatica omdat ik graag de brug wil slaan tussen business en IT. Over het algemeen vond ik het introductieproject duidelijk, 
+gestructureerd en nuttig. In het begin was ik wat sceptisch, maar al snel werd duidelijk dat het toch een goede manier was om zowel de opleiding als de 
+tools te leren kennen. 
+
+
+Wat me wel wat opviel, is dat de ‘introductie’ zelf wat beperkt aanvoelde. Het begon rustig, met duidelijke communicatie en toegankelijke challenges, maar 
+de moeilijkheidsgraad steeg vrij snel. Vooral bij de Pygame-opdracht merkte ik dat er al een stevige basiskennis van Python nodig was. Misschien zou het 
+een goed idee zijn om studenten de keuze te geven uit twee of drie projectopties: bijvoorbeeld een meer creatieve richting (zoals het blackjack spel), een 
+meer zakelijke richting (iets met data of automatisering), en eventueel een technische uitdaging. Zo kan iedereen iets kiezen dat aansluit bij zijn of haar 
+interesse en voorkennis. 
+
+
+De challenges vond ik leuk om te doen, vooral omdat het automatische nakijksysteem heel motiverend werkt. Wel merkte ik dat sommige opdrachten vrij complex 
+werden, waardoor ik soms te snel geneigd was om hulp te zoeken bij AI-tools. Misschien kan er wat meer gewerkt worden met voorbeelden die dichter bij de 
+leefwereld van studenten liggen. Thema’s zoals “hoe werkt het internet” of “wat gebeurt er achter de schermen bij een website” zouden volgens mij de instap 
+wat warmer kunnen maken. 
+
+
+Over het algemeen vond ik het een sterk opgebouwd vak met een mooie balans tussen theorie en praktijk. Het gaf me een goed beeld van wat we mogen verwachten 
+in de opleiding en hielp me om meteen in de juiste mindset te komen! 
+
+Groetjes, 
+Tibe
