@@ -5,7 +5,7 @@ import pygame
 pygame.init()
 
 # DECK SETUP
-cards = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'] 
+cards = ['2','3','4','5','6','7','8','9','10','J','Q','K','A']
 suits = ['C','D','H','S']  # C=Clubs(Klaveren), D=Diamonds(Ruiten), H=Hearts(Harten), S=Spades(Schoppen)
 one_deck = [f"{c}{s}" for c in cards for s in suits] # Maak één compleet deck door elke kaart met elke suit te combineren
 decks = 4
@@ -20,9 +20,9 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption('Blackjack!')
 
 fps = 60
-timer = pygame.time.Clock() 
+timer = pygame.time.Clock()
 font = pygame.font.Font('Poppins-Medium.ttf', 44)
-smaller_font = pygame.font.Font('Poppins-Medium.ttf', 28) 
+smaller_font = pygame.font.Font('Poppins-Medium.ttf', 28)
 
 # GAME STATE VARIABELEN
 game_state = "menu"
@@ -47,7 +47,7 @@ double_down_used = False # voorkomt dat je meerdere keren double down doet
 balance = 5000
 current_bet = 100
 max_bet = 1000
-min_bet = 1 
+min_bet = 1
 original_bet = current_bet
 hand_bets = []  # Lijst met inzetten per hand
 
@@ -67,203 +67,84 @@ result_time = None  # Tijdstip waarop de hand eindigde
 bankrupt_popup = False
 
 # Teksten voor de resultaat popup
-result_title = "" 
+result_title = ""
 result_lines = []
 result_net = 0
 
-# CARDANIMATION
-class CardAnimation:
-    def __init__(self, card, start_pos, end_pos, duration=2000, flip=False, delay=0):
-        self.card = card  # Naam van de kaart
-        self.start = start_pos  # Start positie (x, y) in pixels
-        self.end = end_pos  # Eind positie (x, y) in pixels
-        self.duration = duration  # Duur van animatie in milliseconden
-        self.start_time = pygame.time.get_ticks() + delay  # Wanneer animatie start (huidige tijd + delay)
-        self.flip = flip  # Boolean: moet de kaart omdraaien?
-        self.flip_prog = 0 if flip else 1  # Voortgang van flip (0-1), start op 0 als we flippen
-        self.active = True  # Boolean: is animatie nog actief?
-        self.delay = delay  # Vertraging voor start in milliseconden
-        self.pos = start_pos  # Huidige positie van de kaart
-        
-    def update(self):
-        # Als animatie niet meer actief is, doe niets
-        if not self.active:
-            return
-        
-        # Haal de huidige tijd op in milliseconden
-        now = pygame.time.get_ticks()
-        
-        # Als we nog in de delay periode zitten, wacht dan
-        if now < self.start_time:
-            return
-        
-        # Bereken hoeveel tijd er verstreken is sinds de start
-        elapsed = now - self.start_time
-        
-        # Bereken de voortgang als een getal: 0.0 = net gestart, 1.0 = klaar
-        progress = min(elapsed / self.duration, 1.0)
-        
-        # EASING FUNCTIE - Zorgt voor vloeiende beweging
-        t = progress
-        eased = 1 - pow(1 - t, 2)
-        
-        # Bereken de huidige positie tussen start en eind
-        # We interpoleren (mengen) tussen start en eind op basis van eased progress
-        # Formule: start + (eind - start) * progress
-        self.pos = (
-            self.start[0] + (self.end[0] - self.start[0]) * eased,  # X positie
-            self.start[1] + (self.end[1] - self.start[1]) * eased   # Y positie
-        )
+animations = [] # Elke animatie wordt opgeslagen als een dictionary met de nodige gegevens
 
-        # Als de kaart moet flippen, update dan de flip voortgang
-        # Dit wordt gebruikt in de draw functie om de kaart te schalen
-        if self.flip:
-            self.flip_prog = eased
-        
-        # Als progress 1.0 is (100%), dan is de animatie klaar
-        if progress >= 1.0:
-            self.active = False  # Zet animatie op inactief
-            self.pos = self.end  # Zorg dat de positie exact op het eindpunt is
-        
-    def draw(self, surface):
-        # Als we nog in de delay periode zitten, teken niets
-        if pygame.time.get_ticks() < self.start_time:
-            return
-        
-        try:
-            # FLIP ANIMATIE
-            if self.flip:          
-                if self.flip_prog < 0.5:
-                    # Eerste helft van de flip laat de achterkant van de kaart zien
-                    img = card_back_img
-                    # Bij progress 0.0: scale = 1.0 (volle breedte)
-                    # Bij progress 0.5: scale = 0.0 (geen breedte)
-                    scale = 1 - (self.flip_prog * 2)
-                else:
-                    # Tweede helft van de flip laat de voorkant van de kaart zien
-                    img = pygame.image.load(f"cards/{self.card}.png")
-                    # Bij progress 0.5: scale = 0.0 (geen breedte)
-                    # Bij progress 1.0: scale = 1.0 (volle breedte)
-                    scale = (self.flip_prog - 0.5) * 2
-                
-                # Schaal de kaart naar de standaard grootte
-                img = pygame.transform.scale(img, (CARD_WIDTH, CARD_HEIGHT))
-                
-                # Bereken de geschaalde breedte op basis van de scale factor
-                scaled_w = int(CARD_WIDTH * scale)
-                
-                # Alleen tonen als de breedte groter is dan 0
-                if scaled_w > 0:
-                    # Schaal de kaart naar de berekende breedte (hoogte blijft hetzelfde)
-                    img = pygame.transform.scale(img, (scaled_w, CARD_HEIGHT))
-                    
-                    # Bereken x offset om de kaart op dezelfde plek te houden tijdens flip
-                    x_offset = (CARD_WIDTH - scaled_w) // 2
-                    
-                    # toon de kaart op het scherm
-                    surface.blit(img, (self.pos[0] + x_offset, self.pos[1]))
-            else:
-                if self.card == "BACK":
-                    # Gebruik de achterkant afbeelding
-                    img = card_back_img
-                else:
-                    # Laad de specifieke kaart afbeelding
-                    img = pygame.image.load(f"cards/{self.card}.png")
-                
-                # Schaal de kaart
-                img = pygame.transform.scale(img, (CARD_WIDTH, CARD_HEIGHT))
-                
-                # Teken de kaart op de huidige positie
-                surface.blit(img, self.pos)
-        except:
-            # Als er iets fout gaat laat dan de achterkant van de kaart zien
-            img = card_back_img
-            img = pygame.transform.scale(img, (CARD_WIDTH, CARD_HEIGHT))
-            surface.blit(img, self.pos)
+dealing = False  # zijn we nu kaarten aan het delen?
+flip_anim = None  # animatie voor het omdraaien van de dealer's verborgen kaart
+
+DECK_POS = (WIDTH // 2 - CARD_WIDTH // 2, -CARD_HEIGHT - 50) # Positie van het deck (buiten het scherm bovenaan)
+
+dealer_has_drawn = False
 
 
-# ANIMATIE VARIABELEN
-animations = []  # Lijst met alle actieve CardAnimation objecten
-dealing = False  # Boolean: zijn we nu kaarten aan het delen?
-flip_anim = None  # Speciale animatie voor het omdraaien van de dealer's verborgen kaart
-
-# Positie van het deck (buiten het scherm bovenaan)
-DECK_POS = (WIDTH // 2 - CARD_WIDTH // 2, -CARD_HEIGHT - 50)
-
-
-# HELPER FUNCTIES
+# HELPER/CHECK FUNCTIES
 def can_split(hand):
     if len(hand) != 2:
         return False
-    
-    # Haal de waarde van beide kaarten op (zonder de suit)
-    # Bijvoorbeeld: "AH" wordt "A", "10C" wordt "10"
-    v1 = hand[0][:-1]  # Waarde van eerste kaart
-    v2 = hand[1][:-1]  # Waarde van tweede kaart
-    
+
+    # Haal de waarde van beide kaarten op ("AH" wordt "A", "10C" wordt "10")
+    v1 = hand[0][:-1]  # eerste kaart
+    v2 = hand[1][:-1]  # tweede kaart
+
     # Lijst met alle 10's
     tens = ['10','J','Q','K']
-    
-    # Check of beide kaarten dezelfde waarde hebben
-    # OF beide kaarten zijn 10's
+
     if v1 == v2 or (v1 in tens and v2 in tens):
         return True
-    
+
     return False
 
 def deal_cards(hand, deck):
-    # Kies een willekeurige kaart uit het deck
     card = random.choice(deck)
-    
-    # Voeg de kaart toe aan de hand
+
     hand.append(card)
-    
+
     # Verwijder de kaart uit het deck (kan niet twee keer gedeeld worden)
     deck.remove(card)
-    
+
     return hand, deck
 
 def calculate_score(hand):
     score = 0  # Start met score 0
     aces = 0  # Houd bij hoeveel Azen we hebben
-    
+
     # Tel alle kaarten op
     for card in hand:
-        # Haal de waarde van de kaart op (zonder suit)
-        # Bijvoorbeeld: "AH" wordt "A", "10C" wordt "10"
-        v = card[:-1]
-        
-        if v in ['J','Q','K']:
-            # Plaatjes tellen als 10
+        v = card[:-1]# Haal de waarde van de kaart op ("AH" wordt "A", "10C" wordt "10")
+
+        if v in ['J','Q','K']:             # Plaatjes tellen als 10
             score += 10
         elif v == 'A':
             score += 11
             aces += 1  # tel aas bij
         else:
-            # Nummers tellen als hun waarde
-            score += int(v)
-    
+            score += int(v) # Nummers
+
     # Pas Azen aan als we bust zijn
     while score > 21 and aces > 0:
         score -= 10  # Verander een Aas van 11 naar 1
         aces -= 1  # We hebben nu één Aas minder die we kunnen aanpassen
-    
+
     return score
 
 def draw_centered_lines(surface, rect, lines, title_font, line_font, title_offset=-40, line_spacing=40):
     # Bereken de Y positie voor de titel
     y = rect.centery + title_offset
-    
+
     # Teken de titel (eerste regel)
     title_surf = title_font.render(lines[0], True, (0,0,0))  # Zwarte tekst
     title_rect = title_surf.get_rect(center=(rect.centerx, y))  # Centreer horizontaal
     surface.blit(title_surf, title_rect)
-    
+
     # Teken de rest van de regels
     for i, ln in enumerate(lines[1:]):
         # Bereken Y positie voor deze regel
         sy = y + (i+1)*line_spacing
-        
+
         # Render de tekst
         ls = line_font.render(ln, True, (0,0,0))  # Zwarte tekst
         lrect = ls.get_rect(center=(rect.centerx, sy))  # Centreer horizontaal
@@ -271,110 +152,141 @@ def draw_centered_lines(surface, rect, lines, title_font, line_font, title_offse
 
 def create_deal_animation(card, end_pos, is_back=False, delay=0):
     global animations, dealing
-    
-    # Zet dealing flag op True (voorkomt andere acties tijdens dealing)
+
+    # Zet dealing flag op True (anders kan je doorspelen)
     dealing = True
-    
-    # Bepaal welke kaart afbeelding we gebruiken
-    card_name = "BACK" if is_back else card
-    
-    # Maak een nieuwe animatie vanaf het deck naar de eindpositie
-    anim = CardAnimation(card_name, DECK_POS, end_pos, duration=800, delay=delay)
-    
-    # Voeg de animatie toe aan de lijst
+    card_name = "BACK" if is_back else card # Bepaal welke kaart afbeelding we gebruiken
+
+    # deal animatie
+    anim = {
+        'card': card_name,
+        'start_pos': DECK_POS,
+        'end_pos': end_pos,
+        'start_time': pygame.time.get_ticks() + delay,
+        'duration': 800,
+        'flip': False,
+        'active': True
+    }
+
     animations.append(anim)
 
 def create_flip_animation(card, pos):
     global flip_anim
-    
-    # Maak een nieuwe flip animatie
-    # Start en eind positie zijn hetzelfde (kaart blijft op dezelfde plek)
-    flip_anim = CardAnimation(card, pos, pos, duration=600, flip=True)
+
+    # flip animatie
+    flip_anim = {
+        'card': card,
+        'start_pos': pos,
+        'end_pos': pos,
+        'start_time': pygame.time.get_ticks(),
+        'duration': 600,
+        'flip': True,
+        'active': True,
+        'flip_prog': 0
+    }
+
+def get_animation_position(anim):
+    now = pygame.time.get_ticks() # Bereken de huidige positie van een animatie
+
+    # Als we nog in de delay periode zitten, return start positie
+    if now < anim['start_time']:
+        return anim['start_pos']
+
+    elapsed = now - anim['start_time'] # Bereken hoeveel tijd er verstreken is sinds de start
+    progress = min(elapsed / anim['duration'], 1.0) # Bereken de voortgang: 0.0 = net gestart, 1.0 = klaar
+    eased = 1 - pow(1 - progress, 2) # vloeiende beweging
+
+    # Bereken de huidige positie tussen start en eind
+    pos = (
+        anim['start_pos'][0] + (anim['end_pos'][0] - anim['start_pos'][0]) * eased,
+        anim['start_pos'][1] + (anim['end_pos'][1] - anim['start_pos'][1]) * eased
+    )
+
+    return pos
 
 def get_total_bet_display():
     if split_mode and len(hand_bets) >= 2:
-        # Bij split: tel beide inzetten op
-        return hand_bets[0] + hand_bets[1]
+        return hand_bets[0] + hand_bets[1] # Split
     elif len(hand_bets) > 0:
-        # Bij double down of normale hand: gebruik hand_bets
-        return hand_bets[0]
+        return hand_bets[0] # double down
     else:
-        # Fallback naar original_bet als hand_bets leeg is
-        return original_bet
+        return original_bet # Normaal
 
 
 # DRAW FUNCTIES
 def draw_menu():
-    # Teken de achtergrond
     screen.blit(background_img, (0, 0))
-    
-    # Teken het logo gecentreerd bovenaan
     screen.blit(logo_img, ((WIDTH // 2 - logo_img.get_width() // 2), 50))
-    
+
     # KNOPPEN
-    spacing = 120  # Verticale ruimte tussen knoppen
-    
+    spacing = 120
+
     start_btn = pygame.Rect((WIDTH - 300)//2, 350, 300, 80)
     rules_btn = pygame.Rect((WIDTH - 300)//2, 350 + spacing, 300, 80)
     quit_btn = pygame.Rect((WIDTH - 300)//2, 350 + spacing * 2, 300, 80)
-    
-    # KNOPPEN MET HOVER EFFECT
-    mouse_pos = pygame.mouse.get_pos()  # Haal muispositie op
-    
-    # elke knop
-    for btn in [start_btn, rules_btn, quit_btn]:
-        # Verander kleur bij hover
-        color = (200,200,200) if btn.collidepoint(mouse_pos) else (255,255,255)
-        
-        # Teken de knop achtergrond met afgeronde hoeken
-        pygame.draw.rect(screen, color, btn, border_radius=10)
-        
-        # Teken de knop rand (zwart, 3 pixels dik)
-        pygame.draw.rect(screen, (0,0,0), btn, 3, border_radius=10)
-    
-    # Teken de tekst op elke knop
-    for text, btn in zip(["Start","Rules","Quit"], [start_btn, rules_btn, quit_btn]):
-        t = smaller_font.render(text, True, (0,0,0))  # Zwarte tekst
-        screen.blit(t, t.get_rect(center=btn.center))  # Centreer tekst in knop
+
+    mouse_pos = pygame.mouse.get_pos()  # Muispositie voor hover
+
+    # knoppen in menu
+    # Start
+    color = (200, 200, 200) if start_btn.collidepoint(mouse_pos) else (255, 255, 255)
+    pygame.draw.rect(screen, color, start_btn, border_radius=10)
+    pygame.draw.rect(screen, (0, 0, 0), start_btn, 3, border_radius=10)
+    text_start = smaller_font.render("Start", True, (0, 0, 0))
+    screen.blit(text_start, text_start.get_rect(center=start_btn.center))
+
+    # Rules
+    color = (200, 200, 200) if rules_btn.collidepoint(mouse_pos) else (255, 255, 255)
+    pygame.draw.rect(screen, color, rules_btn, border_radius=10)
+    pygame.draw.rect(screen, (0, 0, 0), rules_btn, 3, border_radius=10)
+    text_rules = smaller_font.render("Rules", True, (0, 0, 0))
+    screen.blit(text_rules, text_rules.get_rect(center=rules_btn.center))
+
+    # Quit
+    color = (200, 200, 200) if quit_btn.collidepoint(mouse_pos) else (255, 255, 255)
+    pygame.draw.rect(screen, color, quit_btn, border_radius=10)
+    pygame.draw.rect(screen, (0, 0, 0), quit_btn, 3, border_radius=10)
+    text_quit = smaller_font.render("Quit", True, (0, 0, 0))
+    screen.blit(text_quit, text_quit.get_rect(center=quit_btn.center))
 
     # BANKRUPT POPUP
     if bankrupt_popup:
-        # transparante overlay over het hele scherm
+        # transparante overlay
         overlay_full = pygame.Surface((WIDTH, HEIGHT))
         overlay_full.set_alpha(200)  # 200/255
         overlay_full.fill((0, 0, 0))  # Zwart
         screen.blit(overlay_full, (0, 0))
-        
-        # Maak de popup box
+
+        # popup box
         w, h = WIDTH//2, HEIGHT//3
         popup = pygame.Surface((w, h))
         popup.fill("white")  # Witte achtergrond
         pygame.draw.rect(popup, "black", (0,0,w,h), 3, border_radius=15)  # Zwarte rand
         rect = popup.get_rect(center=(WIDTH//2, HEIGHT//2))  # Centreer op scherm
-        
+
         # Bereken verticale centrering voor de tekst
         total_content_height = 60 + 40 + 60  # title + message + button
         start_y = (h - total_content_height) // 2
-        
-        # Teken titel
+
+        # titel
         t = font.render("You're broke!", True, "black")
         popup.blit(t, (w//2 - t.get_width()//2, start_y))
-        
-        # Teken bericht
+
+        # bericht
         msg = smaller_font.render("You lost all your money.", True, "black")
         popup.blit(msg, (w//2 - msg.get_width()//2, start_y + 60))
-        
-        # Teken quit knop
+
+        # quit knop
         quit_btn2 = pygame.Rect(w//2 - 60, start_y + 120, 120, 50)
         pygame.draw.rect(popup, (230,230,230), quit_btn2, border_radius=8)
         pygame.draw.rect(popup, (0,0,0), quit_btn2, 2, border_radius=8)
         qtxt = smaller_font.render("Quit", True, "black")
         popup.blit(qtxt, qtxt.get_rect(center=quit_btn2.center))
-        
-        # Blit de popup op het scherm
+
+        # popup op het scherm
         screen.blit(popup, rect.topleft)
-        
-        # Pas de quit button positie aan voor de echte scherm coördinaten
+
+        # popup-knop omztten zodat hij klikbaar is
         quit_btn2_screen = pygame.Rect(rect.left + quit_btn2.left, rect.top + quit_btn2.top, quit_btn2.width, quit_btn2.height)
         return [start_btn, rules_btn, quit_btn, quit_btn2_screen]
 
@@ -383,12 +295,10 @@ def draw_menu():
 def draw_rules():
     #  achtergrond
     screen.blit(background_img, (0, 0))
-    
-    # titel
+
     title = font.render("Rules", True, "white")
     screen.blit(title, (50, 60))
-    
-    # REGELS
+
     rules_texts = [
         "Blackjack Rules:",
         "- Get as close to 21 as possible.",
@@ -397,62 +307,71 @@ def draw_rules():
         "- ENTER = Hit | SPACE = Stand",
         "- TAB = Double Down | E = Split (if allowed)"
     ]
-    
+
     # elke regel met 50 pixels verticale ruimte
     for i, line in enumerate(rules_texts):
         screen.blit(smaller_font.render(line, True, "white"), (50, 150 + i*50))
-    
+
     # TERUG KNOP
     back_btn = pygame.Rect((WIDTH-300)//2, HEIGHT-150, 300, 80)
     mouse_pos = pygame.mouse.get_pos()
-    
+
     # Hover effect
     color = (200,200,200) if back_btn.collidepoint(mouse_pos) else (255,255,255)
     pygame.draw.rect(screen, color, back_btn, border_radius=10)
     pygame.draw.rect(screen, (0,0,0), back_btn, 3, border_radius=10)
-    
-    # Teken tekst
+
     bt = smaller_font.render("BACK", True, (0,0,0))
     screen.blit(bt, bt.get_rect(center=back_btn.center))
-    
+
     return [back_btn]
 
 def draw_bet_popup():
-    # popup
-    w, h = WIDTH//2, HEIGHT//3
+    # popup achtergrond
+    w, h = WIDTH // 2, HEIGHT // 3
     overlay = pygame.Surface((w, h))
     overlay.fill("white")
-    pygame.draw.rect(overlay, "black", (0,0,w,h), 3, border_radius=15)
-    rect = overlay.get_rect(center=(WIDTH//2, HEIGHT//2))
+    pygame.draw.rect(overlay, "black", (0, 0, w, h), 3, border_radius=15)
+    rect = overlay.get_rect(center=(WIDTH // 2, HEIGHT // 2))
     screen.blit(overlay, rect.topleft)
 
     # titel
     title = font.render("Place your bet", True, "black")
-    screen.blit(title, (rect.centerx - title.get_width()//2, rect.top + 40))
+    screen.blit(title, (rect.centerx - title.get_width() // 2, rect.top + 40))
 
-    # SALDO EN INZET
+    # saldo en inzet
     bal_text = smaller_font.render(f"Balance: €{balance}", True, "black")
     bet_text = smaller_font.render(f"Bet: €{current_bet}", True, "black")
-    screen.blit(bal_text, (rect.centerx - bal_text.get_width()//2, rect.top + 110))
-    screen.blit(bet_text, (rect.centerx - bet_text.get_width()//2, rect.top + 150))
+    screen.blit(bal_text, (rect.centerx - bal_text.get_width() // 2, rect.top + 110))
+    screen.blit(bet_text, (rect.centerx - bet_text.get_width() // 2, rect.top + 150))
 
-    # PLUS EN MIN KNOPPEN
-    # Deze knoppen staan naast de inzet tekst
+    # knoppenposities
     bet_y = rect.top + 150
     text_height = bet_text.get_height()
-    
-    plus_btn = pygame.Rect(rect.centerx + 80, bet_y + text_height//2 - 15, 40, 30)
-    minus_btn = pygame.Rect(rect.centerx - 130, bet_y + text_height//2 - 15, 40, 30)
-    
+
+    plus_btn = pygame.Rect(rect.centerx + 80, bet_y + text_height // 2 - 15, 40, 30)
+    minus_btn = pygame.Rect(rect.centerx - 130, bet_y + text_height // 2 - 15, 40, 30)
     deal_btn = pygame.Rect(rect.centerx - 100, bet_y + 80, 200, 60)
 
-    # Teken alle knoppen
-    for btn, txt in zip([plus_btn, minus_btn, deal_btn], ["+","-","DEAL"]):
-        pygame.draw.rect(screen, (230,230,230), btn, border_radius=8)
-        pygame.draw.rect(screen, (0,0,0), btn, 2, border_radius=8)
-        t = smaller_font.render(txt, True, "black")
-        screen.blit(t, t.get_rect(center=btn.center))
+    # plus-knop
+    pygame.draw.rect(screen, (230, 230, 230), plus_btn, border_radius=8)
+    pygame.draw.rect(screen, (0, 0, 0), plus_btn, 2, border_radius=8)
+    plus_text = smaller_font.render("+", True, "black")
+    screen.blit(plus_text, plus_text.get_rect(center=plus_btn.center))
 
+    # min-knop
+    pygame.draw.rect(screen, (230, 230, 230), minus_btn, border_radius=8)
+    pygame.draw.rect(screen, (0, 0, 0), minus_btn, 2, border_radius=8)
+    minus_text = smaller_font.render("-", True, "black")
+    screen.blit(minus_text, minus_text.get_rect(center=minus_btn.center))
+
+    # deal-knop
+    pygame.draw.rect(screen, (230, 230, 230), deal_btn, border_radius=8)
+    pygame.draw.rect(screen, (0, 0, 0), deal_btn, 2, border_radius=8)
+    deal_text = smaller_font.render("DEAL", True, "black")
+    screen.blit(deal_text, deal_text.get_rect(center=deal_btn.center))
+
+    # return knoppen zodat ze klikbaar zijn
     return [plus_btn, minus_btn, deal_btn]
 
 def popup_result():
@@ -460,16 +379,16 @@ def popup_result():
     title_height = 80  # Ruimte voor titel
     line_height = 35  # Hoogte per tekst regel
     button_area = 80  # Ruimte voor knoppen
-    padding = 40  # Extra ruimte boven en onder
-    
+    padding = 40
+
     # Bereken totale hoogte
     content_height = title_height + (len(result_lines) * line_height) + button_area + padding
-    
+
     # Beperk hoogte tussen minimum en maximum
     min_height = 250
     max_height = HEIGHT * 0.6
     h = max(min_height, min(content_height, max_height))
-    
+
     # POPUP BOX
     w = WIDTH//2
     overlay = pygame.Surface((w, h))
@@ -486,42 +405,96 @@ def popup_result():
     line_y = rect.top + 90
     for line in result_lines:
         txt = smaller_font.render(line, True, "black")
-        screen.blit(txt, (rect.centerx - txt.get_width()//2, line_y))
+        screen.blit(txt, (rect.centerx - txt.get_width() // 2, line_y))
         line_y += line_height
 
     # KNOPPEN
     button_y = rect.top + h - 80
-    
-    # New knop (start nieuwe ronde)
+
+    # New-knop (start nieuwe ronde)
     again_btn = pygame.Rect(rect.centerx - 120, button_y, 100, 50)
-    
-    # Menu knop (terug naar hoofdmenu)
+    pygame.draw.rect(screen, (230, 230, 230), again_btn, border_radius=8)
+    pygame.draw.rect(screen, (0, 0, 0), again_btn, 2, border_radius=8)
+    again_text = smaller_font.render("New", True, "black")
+    screen.blit(again_text, again_text.get_rect(center=again_btn.center))
+
+    # Menu-knop (terug naar hoofdmenu)
     menu_btn = pygame.Rect(rect.centerx + 20, button_y, 100, 50)
-    
-    # Teken beide knoppen
-    for btn, txt in zip([again_btn, menu_btn], ["New","Menu"]):
-        pygame.draw.rect(screen, (230,230,230), btn, border_radius=8)
-        pygame.draw.rect(screen, (0,0,0), btn, 2, border_radius=8)
-        t = smaller_font.render(txt, True, "black")
-        screen.blit(t, t.get_rect(center=btn.center))
+    pygame.draw.rect(screen, (230, 230, 230), menu_btn, border_radius=8)
+    pygame.draw.rect(screen, (0, 0, 0), menu_btn, 2, border_radius=8)
+    menu_text = smaller_font.render("Menu", True, "black")
+    screen.blit(menu_text, menu_text.get_rect(center=menu_btn.center))
 
     return [again_btn, menu_btn]
 
+def draw_card_animated(surface, anim):
+    now = pygame.time.get_ticks()
+
+    # Als we nog in de delay periode zitten, teken niets
+    if now < anim['start_time']:
+        return
+
+    # Bereken voortgang van animatie
+    elapsed = now - anim['start_time']
+    progress = min(elapsed / anim['duration'], 1.0)
+
+    # Krijg de huidige positie
+    pos = get_animation_position(anim)
+
+    try:
+        # FLIP ANIMATIE
+        if anim['flip']:
+            # Update flip voortgang
+            anim['flip_prog'] = progress
+
+            if progress < 0.5:
+                # Eerste helft: achterkant zien
+                img = card_back_img
+                scale = 1 - (progress * 2)
+            else:
+                # Tweede helft: voorkant zien
+                img = pygame.image.load(f"cards/{anim['card']}.png")
+                scale = (progress - 0.5) * 2
+
+            # Schaal de kaart naar standaard grootte
+            img = pygame.transform.scale(img, (CARD_WIDTH, CARD_HEIGHT))
+
+            # Bereken de geschaalde breedte
+            scaled_w = int(CARD_WIDTH * scale)
+
+            # Alleen tonen als breedte > 0
+            if scaled_w > 0:
+                img = pygame.transform.scale(img, (scaled_w, CARD_HEIGHT))
+                x_offset = (CARD_WIDTH - scaled_w) // 2
+                surface.blit(img, (pos[0] + x_offset, pos[1]))
+        else:
+            # NORMALE ANIMATIE (geen flip)
+            if anim['card'] == "BACK":
+                img = card_back_img
+            else:
+                img = pygame.image.load(f"cards/{anim['card']}.png")
+
+            img = pygame.transform.scale(img, (CARD_WIDTH, CARD_HEIGHT))
+            surface.blit(img, pos)
+    except:
+        # Fallback: achterkant
+        img = card_back_img
+        img = pygame.transform.scale(img, (CARD_WIDTH, CARD_HEIGHT))
+        surface.blit(img, pos)
+
 def draw_playing():
     global flip_anim
-    
-    # Teken achtergrond
+
+    # achtergrond
     screen.blit(background_img, (0, 0))
-    
-    # Teken klein logo rechtsboven
+    # klein logo rechtsboven
     screen.blit(logo_play_img, (WIDTH - logo_play_img.get_width() - 20, 20))
 
     # DEALER KAARTEN
     # dealer kaarten gecentreerd
     dealer_start = (WIDTH - len(dealer_hand)*CARD_WIDTH)//2
 
-    # Bepaal of we de hole card (tweede kaart) moeten verbergen
-    # Dit gebeurt tijdens split mode als we de eerste hand spelen
+    # hole card verbergen tijdens split mode als we de eerste hand spelen
     hide_hole = False
     if split_mode and current_hand_index == 0 and hand_active:
         hide_hole = True
@@ -530,25 +503,24 @@ def draw_playing():
     for i, c in enumerate(dealer_hand):
         card_x = dealer_start + i*CARD_WIDTH
         card_y = 50
-        
+
         # Check of deze kaart momenteel geanimeerd wordt
         is_anim = False
         for anim in animations:
-            if anim.active and anim.card == c:
-                anim.draw(screen)  # Laat animatie de kaart tekenen
+            if anim['active'] and anim['card'] == c:
+                draw_card_animated(screen, anim)  # Teken de animatie
                 is_anim = True
                 break
-        
+
         # Check voor flip animatie op de hole card (tweede kaart)
-        if i == 1 and flip_anim and flip_anim.active:
-            flip_anim.draw(screen)  # Laat flip animatie de kaart tekenen
+        if i == 1 and flip_anim and flip_anim['active']:
+            draw_card_animated(screen, flip_anim)  # Teken flip animatie
             is_anim = True
-        
+
         # Als de kaart niet geanimeerd wordt, teken hem normaal
         if not is_anim:
-            # Bepaal welke afbeelding we moeten tonen
-            if i == 0 and not reveal_dealer:
-                # Eerste kaart is altijd verborgen tot reveal
+            if i == 1 and not reveal_dealer:
+                # Tweede kaart (hole card) is verborgen tot reveal
                 img = card_back_img
             else:
                 if i == 1 and hide_hole:
@@ -560,8 +532,8 @@ def draw_playing():
                         img = pygame.image.load(f"cards/{c}.png")
                     except:
                         img = card_back_img
-            
-            # Schaal en teken de kaart
+
+            # Schaal kaart
             img = pygame.transform.scale(img, (CARD_WIDTH, CARD_HEIGHT))
             screen.blit(img, (card_x, card_y))
 
@@ -569,7 +541,7 @@ def draw_playing():
     if not show_bet_popup:
         # Toon "?" als dealer nog niet revealed is, anders de echte score
         dealer_display = dealer_score if reveal_dealer else "?"
-        screen.blit(smaller_font.render(f"Dealer: {dealer_display}", True, "white"), 
+        screen.blit(smaller_font.render(f"Dealer: {dealer_display}", True, "white"),
                    (dealer_start, 50 + CARD_HEIGHT + 10))
 
 
@@ -577,17 +549,17 @@ def draw_playing():
     # Bepaal welke handen we moeten tekenen (split of normale hand)
     all_hands = split_hands if split_mode else [my_hand]
     hand_y = HEIGHT//2 + 50  # Y positie voor speler kaarten
-    
+
     if split_mode:
         # SPLIT MODE: Teken twee handen naast elkaar
         spacing_between_hands = 80  # Ruimte tussen de twee handen
-        
+
         # Bereken totale breedte van beide handen
         total_width = len(all_hands[0])*CARD_WIDTH + spacing_between_hands + len(all_hands[1])*CARD_WIDTH
-        
+
         # Bereken start X zodat beide handen gecentreerd zijn
         start_x = (WIDTH - total_width)//2
-        
+
         # Teken elke hand
         for idx, hand in enumerate(all_hands):
             # Bereken X positie voor deze hand
@@ -597,19 +569,19 @@ def draw_playing():
             else:
                 # Rechter hand (na spacing)
                 hand_x = start_x + len(all_hands[0])*CARD_WIDTH + spacing_between_hands
-            
+
             # Teken elke kaart in deze hand
             for i, c in enumerate(hand):
                 card_x = hand_x + i*CARD_WIDTH
-                
+
                 # Check of deze kaart geanimeerd wordt
                 is_anim = False
                 for anim in animations:
-                    if anim.active and anim.card == c:
-                        anim.draw(screen)
+                    if anim['active'] and anim['card'] == c:
+                        draw_card_animated(screen, anim)
                         is_anim = True
                         break
-                
+
                 # Teken kaart normaal als niet geanimeerd
                 if not is_anim:
                     try:
@@ -635,19 +607,19 @@ def draw_playing():
     else:
         # NORMALE HAND: één hand gecentreerd
         hand_x = (WIDTH - len(my_hand)*CARD_WIDTH)//2
-        
+
         # elke kaart
         for i, c in enumerate(my_hand):
             card_x = hand_x + i*CARD_WIDTH
-            
+
             # Check of deze kaart geanimeerd wordt
             is_anim = False
             for anim in animations:
-                if anim.active and anim.card == c:
-                    anim.draw(screen)
+                if anim['active'] and anim['card'] == c:
+                    draw_card_animated(screen, anim)
                     is_anim = True
                     break
-            
+
             # Teken kaart normaal als niet geanimeerd
             if not is_anim:
                 try:
@@ -664,8 +636,7 @@ def draw_playing():
                         (hand_x, hand_y + CARD_HEIGHT + 10))
 
     # CONTROLS
-    # Basis controls (altijd beschikbaar)
-    key_lines = ["ENTER=Hit", "SPACE=Stand"]
+    key_lines = ["ENTER=Hit", "SPACE=Stand"] # Basis controls (altijd beschikbaar)
 
     # Check of split beschikbaar is
     can_show_split = (not split_mode) and (len(my_hand) == 2) and can_split(my_hand) and (balance >= original_bet)
@@ -681,7 +652,7 @@ def draw_playing():
     else:
         # Normale hand:
         can_show_double = (len(my_hand) == 2) and (balance >= original_bet)
-    
+
     if can_show_double and not double_down_used:
         key_lines.append("TAB=Double down")
 
@@ -693,16 +664,560 @@ def draw_playing():
     # SALDO EN INZET
     # saldo linksonder
     screen.blit(smaller_font.render(f"Balance: €{balance}", True, "white"), (50, HEIGHT - 100))
-    
+
     # Bereken en teken totale inzet (inclusief split/double down)
     total_bet_display = get_total_bet_display()
     screen.blit(smaller_font.render(f"Total bet: €{total_bet_display}", True, "white"), (50, HEIGHT - 70))
 
 
-# MAIN GAME LOOP
+# ANIMATION FUNCTIES
+def update_animations():
+    global dealing, flip_anim, animations
+
+    # Update alle actieve kaart animaties
+    for anim in animations[:]:  # [:] maakt een kopie zodat we veilig kunnen verwijderen
+        now = pygame.time.get_ticks()
+        elapsed = now - anim['start_time']
+
+        # Als de animatie klaar is (elapsed > duration), markeer als inactief
+        if elapsed >= anim['duration']:
+            anim['active'] = False
+
+        # Verwijder inactieve animaties
+        if not anim['active']:
+            animations.remove(anim)
+
+    # Update flip animatie (voor dealer's hole card)
+    if flip_anim:
+        now = pygame.time.get_ticks()
+        elapsed = now - flip_anim['start_time']
+
+        if elapsed >= flip_anim['duration']:
+            flip_anim['active'] = False
+
+        # Verwijder als voltooid
+        if not flip_anim['active']:
+            flip_anim = None
+
+    # Check of dealing klaar is (alle animaties voltooid)
+    if dealing and len(animations) == 0:
+        dealing = False
+
+
+# EVENT HANDLING
+def handle_menu_click(pos):
+    global game_state, current_bet, show_bet_popup, active, outcome, my_hand, dealer_hand, bankrupt_popup, run
+
+    buttons = draw_menu()
+
+    if buttons and buttons[0].collidepoint(pos):  # Start knop
+        # Pas inzet aan als saldo lager is dan max_bet
+        if balance < max_bet:
+            current_bet = min(current_bet, balance)
+        game_state = "playing"
+        show_bet_popup = True
+        active = False
+        outcome = 0
+        my_hand, dealer_hand = [], []
+    elif buttons and buttons[1].collidepoint(pos):  # Rules knop
+        game_state = "rules"
+    elif buttons and buttons[2].collidepoint(pos):  # Quit knop
+        return False
+
+    # Bankrupt popup quit knop
+    if bankrupt_popup and len(buttons) >= 4 and buttons[3].collidepoint(pos):
+        return False
+
+    return True
+
+def handle_rules_click(pos):
+    global game_state
+
+    buttons = draw_rules()
+
+    if buttons and buttons[0].collidepoint(pos):  # Back knop
+        game_state = "menu"
+
+def handle_bet_popup_click(pos):
+    global balance, current_bet, show_bet_popup, active, hand_active, initial_deal, reveal_dealer, outcome, split_mode, split_hands, current_hand_index, double_down_used, original_bet, hand_bets, game_deck, animations, flip_anim, dealing, dealer_has_drawn
+
+    buttons = draw_bet_popup()
+
+    if buttons[0].collidepoint(pos):  # Plus knop
+        # Verhoog inzet met €100
+        effective_max = balance if balance < max_bet else max_bet
+        if current_bet + 100 <= effective_max:
+            current_bet = min(current_bet + 100, effective_max)
+        else:
+            current_bet = effective_max
+    elif buttons[1].collidepoint(pos):  # Min knop
+        # Verlaag inzet met €100
+        current_bet = max(current_bet - 100, min_bet)
+    elif buttons[2].collidepoint(pos):  # Deal knop
+        # Start nieuwe ronde
+        effective_max = balance if balance < max_bet else max_bet
+        if current_bet > effective_max:
+            current_bet = effective_max
+        if current_bet <= balance:
+            # Trek inzet af van saldo
+            balance -= current_bet
+            original_bet = current_bet
+            hand_bets = [original_bet]
+
+            # Reset alle game variabelen
+            active = True
+            hand_active = True
+            initial_deal = True
+            reveal_dealer = False
+            outcome = 0
+            split_mode = False
+            split_hands = []
+            current_hand_index = 0
+            double_down_used = False
+            show_bet_popup = False
+            dealer_has_drawn = False  # Reset dealer_has_drawn flag
+
+            game_deck = copy.deepcopy(one_deck * decks) # Maak nieuw deck
+
+            # Reset animaties
+            animations.clear()
+            flip_anim = None
+            dealing = False
+
+def handle_result_popup_click(pos):
+    global show_bet_popup, outcome, my_hand, dealer_hand, split_mode, split_hands, current_hand_index, hand_bets, current_bet, hand_active, reveal_dealer, result_time, result_title, result_lines, result_net, game_state, animations, flip_anim, dealing, payout_done
+
+    buttons = popup_result()
+
+    if buttons[0].collidepoint(pos):  # New game knop
+        # Start nieuwe ronde
+        show_bet_popup = True
+        outcome = 0
+        my_hand, dealer_hand = [], []
+        payout_done = False
+        split_mode = False
+        split_hands = []
+        current_bet = original_bet
+        current_hand_index = 0
+        hand_bets = []
+        hand_active = False
+        reveal_dealer = False
+        result_time = None
+        result_title = ""
+        result_lines = []
+        result_net = 0
+        animations.clear()
+        flip_anim = None
+        dealing = False
+    elif buttons[1].collidepoint(pos):  # Menu knop
+        # Terug naar hoofdmenu
+        game_state = "menu"
+        show_bet_popup = False
+        my_hand, dealer_hand = [], []
+        outcome = 0
+        reveal_dealer = False
+        split_mode = False
+        split_hands = []
+        hand_bets = []
+        result_time = None
+        result_title = ""
+        result_lines = []
+        result_net = 0
+        animations.clear()
+        flip_anim = None
+        dealing = False
+
+def handle_playing_keydown(key):
+    global my_hand, game_deck, dealer_hand, split_hands, current_hand_index, hand_active, reveal_dealer, double_down_used, balance, hand_bets, split_mode, player_score, dealing
+
+    # ENTER - HIT
+    if key == pygame.K_RETURN:
+        handle_hit()
+    # SPACE - STAND
+    elif key == pygame.K_SPACE:
+        handle_stand()
+    # TAB - DOUBLE DOWN
+    elif key == pygame.K_TAB:
+        handle_double_down()
+    # E - SPLIT
+    elif key == pygame.K_e:
+        handle_split()
+
+def handle_hit():
+    global my_hand, game_deck, split_hands, current_hand_index, hand_active, player_score, dealing, animations, flip_anim, reveal_dealer
+
+    if split_mode:
+        # Split mode: pak kaart voor actieve hand
+        split_hands[current_hand_index], game_deck = deal_cards(split_hands[current_hand_index], game_deck)
+
+        # Bereken positie voor nieuwe kaart
+        all_hands = split_hands
+        hand_y = HEIGHT//2 + 50
+        spacing_between_hands = 80
+        total_width = len(all_hands[0])*CARD_WIDTH + spacing_between_hands + len(all_hands[1])*CARD_WIDTH
+        start_x = (WIDTH - total_width)//2
+
+        if current_hand_index == 0:
+            hand_x = start_x
+        else:
+            hand_x = start_x + len(all_hands[0])*CARD_WIDTH + spacing_between_hands
+
+        card_x = hand_x + (len(split_hands[current_hand_index])-1)*CARD_WIDTH
+        create_deal_animation(split_hands[current_hand_index][-1], (card_x, hand_y))
+
+        # Check voor bust
+        sc = calculate_score(split_hands[current_hand_index])
+        if sc > 21:  # Bust
+            hand_active = False
+            reveal_dealer = True
+    else:
+        # Normale hand: pak kaart
+        my_hand, game_deck = deal_cards(my_hand, game_deck)
+        hand_y = HEIGHT//2 + 50
+        hand_x = (WIDTH - len(my_hand)*CARD_WIDTH)//2
+        card_x = hand_x + (len(my_hand)-1)*CARD_WIDTH
+        create_deal_animation(my_hand[-1], (card_x, hand_y))
+
+        player_score = calculate_score(my_hand)
+        if player_score > 21:  # Bust
+            hand_active = False
+            reveal_dealer = True
+
+def handle_stand():
+    global hand_active, current_hand_index, split_mode, reveal_dealer, dealer_hand, flip_anim
+
+    hand_active = False
+    reveal_dealer = True
+
+    # flip animatie voor dealer's hole card (alleen als we bij hand 1 zijn of geen split)
+    if not split_mode or (split_mode and current_hand_index == 1):
+        dealer_start = (WIDTH - len(dealer_hand)*CARD_WIDTH)//2
+        hole_card_pos = (dealer_start + CARD_WIDTH, 50)
+        create_flip_animation(dealer_hand[1], hole_card_pos)
+
+
+def handle_double_down():
+    global split_mode, split_hands, current_hand_index, balance, hand_bets, my_hand, game_deck, double_down_used, hand_active, reveal_dealer, dealer_hand, flip_anim, animations, dealing
+
+    if split_mode:
+        # Double down in split mode
+        active_hand = split_hands[current_hand_index]
+        if len(active_hand) == 2:
+            hb = hand_bets[current_hand_index] if current_hand_index < len(hand_bets) else original_bet
+            if balance >= hb and not double_down_used:
+                # Trek geld af en verdubbel inzet
+                balance -= hb
+                hand_bets[current_hand_index] = hb * 2
+
+                # Pak één kaart
+                split_hands[current_hand_index], game_deck = deal_cards(split_hands[current_hand_index], game_deck)
+
+                # Bereken positie voor nieuwe kaart
+                all_hands = split_hands
+                hand_y = HEIGHT//2 + 50
+                spacing_between_hands = 80
+                total_width = len(all_hands[0])*CARD_WIDTH + spacing_between_hands + len(all_hands[1])*CARD_WIDTH
+                start_x = (WIDTH - total_width)//2
+
+                if current_hand_index == 0:
+                    hand_x = start_x
+                else:
+                    hand_x = start_x + len(all_hands[0])*CARD_WIDTH + spacing_between_hands
+
+                card_x = hand_x + (len(split_hands[current_hand_index])-1)*CARD_WIDTH
+                create_deal_animation(split_hands[current_hand_index][-1], (card_x, hand_y))
+
+                double_down_used = True
+                hand_active = False
+                # Reveal dealer als we bij tweede hand zijn
+                if current_hand_index == 1:
+                    reveal_dealer = True
+                    dealer_start = (WIDTH - len(dealer_hand)*CARD_WIDTH)//2
+                    hole_card_pos = (dealer_start + CARD_WIDTH, 50)
+                    create_flip_animation(dealer_hand[1], hole_card_pos)
+    else:
+        # Double down in normale hand
+        if len(my_hand) == 2 and not double_down_used and balance >= original_bet:
+            # Trek geld af en verdubbel inzet
+            balance -= original_bet
+            if len(hand_bets) == 0:
+                hand_bets = [original_bet]
+            hand_bets[0] = hand_bets[0] * 2
+
+            # Pak één kaart
+            my_hand, game_deck = deal_cards(my_hand, game_deck)
+            hand_y = HEIGHT//2 + 50
+            hand_x = (WIDTH - len(my_hand)*CARD_WIDTH)//2
+            card_x = hand_x + (len(my_hand)-1)*CARD_WIDTH
+            create_deal_animation(my_hand[-1], (card_x, hand_y))
+
+            double_down_used = True
+            hand_active = False
+            reveal_dealer = True
+            # Maak flip animatie voor dealer's hole card
+            dealer_start = (WIDTH - len(dealer_hand)*CARD_WIDTH)//2
+            hole_card_pos = (dealer_start + CARD_WIDTH, 50)
+            create_flip_animation(dealer_hand[1], hole_card_pos)
+
+def handle_split():
+    global my_hand, split_mode, split_hands, balance, original_bet, hand_bets, current_hand_index, game_deck, animations, dealing, hand_active, reveal_dealer
+
+    if not split_mode and len(my_hand) == 2 and balance >= original_bet:
+        # Check of we kunnen splitten
+        if can_split(my_hand) and balance >= original_bet:
+            # Trek geld af voor tweede hand
+            balance -= original_bet
+
+            # Activeer split mode
+            split_mode = True
+            split_hands = [[my_hand[0]], [my_hand[1]]]  # Maak twee handen met elk één kaart
+            hand_bets = [original_bet, original_bet]  # Beide handen hebben dezelfde inzet
+            my_hand = split_hands[0]
+            current_hand_index = 0  # Start met eerste hand
+
+            # Deel eerste kaart aan eerste hand
+            split_hands[0], game_deck = deal_cards(split_hands[0], game_deck)
+
+            # Bereken positie voor nieuwe kaart
+            all_hands = split_hands
+            hand_y = HEIGHT//2 + 50
+            spacing_between_hands = 80
+            total_width = len(all_hands[0])*CARD_WIDTH + spacing_between_hands + len(all_hands[1])*CARD_WIDTH
+            start_x = (WIDTH - total_width)//2
+            hand_x = start_x
+            card_x = hand_x + CARD_WIDTH
+            create_deal_animation(split_hands[0][-1], (card_x, hand_y))
+
+            hand_active = True
+            reveal_dealer = False
+
+
+# GAME LOGIC
+def initial_deal_cards():
+    global my_hand, dealer_hand, game_deck, player_score, dealer_score, initial_deal, hand_bets, outcome, result_title, result_lines, result_net, payout_done, hand_active, reveal_dealer, result_time, balance
+
+    dealer_start = (WIDTH - 2*CARD_WIDTH)//2
+    hand_y = HEIGHT//2 + 50
+    player_start = (WIDTH - 2*CARD_WIDTH)//2
+
+    # Deel 2 kaarten aan speler en dealer
+    for i in range(2):
+        # Deel kaart aan speler
+        my_hand, game_deck = deal_cards(my_hand, game_deck)
+        # Deel kaart aan dealer
+        dealer_hand, game_deck = deal_cards(dealer_hand, game_deck)
+
+        # Maak animaties voor beide kaarten
+        # Elke kaart heeft steeds delay meer dan de vorige
+        create_deal_animation(my_hand[i], (player_start + i*CARD_WIDTH, hand_y), delay=i*500)
+
+        # Tweede dealer kaart is verborgen (achterkant)
+        is_back = (i == 1)
+        create_deal_animation(dealer_hand[i], (dealer_start + i*CARD_WIDTH, 50), is_back=is_back, delay=i*200)
+
+    initial_deal = False
+
+    # Initialiseer hand_bets als we niet in split mode zijn
+    if not split_mode:
+        hand_bets = [original_bet]
+
+    # Bereken scores
+    player_score = calculate_score(my_hand)
+    dealer_score = calculate_score(dealer_hand)
+
+    # CHECK VOOR BLACKJACK
+    if player_score == 21 and dealer_score != 21:
+        # Speler heeft blackjack! Betaalt 3:2 (1.5x inzet)
+        outcome = 5
+        balance += int(original_bet * 2.25)  # Inzet terug + 1.5x winst
+        hand_active = False
+        reveal_dealer = True
+        payout_done = True
+        result_time = pygame.time.get_ticks()
+        result_title = "Blackjack!"
+        result_lines = [f"The dealer has {dealer_score}, you have {player_score}.", f"You win €{int(original_bet * 1.25)}!"]
+        result_net = int(original_bet * 1.25)
+    elif dealer_score == 21 and player_score != 21:
+        # Dealer heeft blackjack, speler verliest
+        outcome = 1
+        hand_active = False
+        reveal_dealer = True
+        payout_done = True
+        result_time = pygame.time.get_ticks()
+        result_title = "You lost..."
+        result_lines = [f"The dealer has {dealer_score}, you have {player_score}.", "You lose."]
+        result_net = -original_bet
+    elif dealer_score == 21 and player_score == 21:
+        # Beide hebben blackjack - push (gelijkspel)
+        outcome = 4
+        balance += original_bet  # Inzet terug
+        payout_done = True
+        hand_active = False
+        reveal_dealer = True
+        result_time = pygame.time.get_ticks()
+        result_title = "Push!"
+        result_lines = [f"The dealer has {dealer_score}, you have {player_score}.","Push."]
+        result_net = 0
+
+def handle_dealer_draws():
+    global dealer_hand, game_deck, dealer_score, dealer_has_drawn
+
+    if dealer_has_drawn:
+        return
+
+    dealer_has_drawn = True
+
+    dealer_score = calculate_score(dealer_hand)
+
+    while dealer_score < 17:
+        # Pak een kaart
+        dealer_hand, game_deck = deal_cards(dealer_hand, game_deck)
+        
+        dealer_score = calculate_score(dealer_hand)
+
+        # Maak animatie voor nieuwe kaart
+        dealer_start = (WIDTH - len(dealer_hand)*CARD_WIDTH)//2
+        card_x = dealer_start + (len(dealer_hand)-1)*CARD_WIDTH
+        create_deal_animation(dealer_hand[-1], (card_x, 50), delay=300)
+
+def check_normal_hand_outcome():
+    global player_score, dealer_score, outcome, balance, hand_bets, result_title, result_lines, result_net, payout_done, current_bet, result_time, reveal_dealer, dealer_hand, flip_anim, my_hand, game_deck
+
+    player_score = calculate_score(my_hand)
+
+    if player_score > 21:
+        # Speler bust
+        outcome = 1
+        result_title = "You busted!"
+        result_lines = [f"You have busted ({player_score}).", "You lose."]
+        result_net = -hand_bets[0] if len(hand_bets)>0 else -original_bet
+        payout_done = True
+        result_time = pygame.time.get_ticks()
+    else:
+        # Speler niet bust - vergelijk met dealer
+        handle_dealer_draws()
+        dealer_score = calculate_score(dealer_hand)
+        reveal_dealer = True
+        dealer_start = (WIDTH - len(dealer_hand)*CARD_WIDTH)//2
+        hole_card_pos = (dealer_start + CARD_WIDTH, 50)
+        create_flip_animation(dealer_hand[1], hole_card_pos)
+
+        if dealer_score > 21:
+            # Dealer bust
+            outcome = 2
+            hb = hand_bets[0] if len(hand_bets)>0 else original_bet
+            balance += hb * 2
+            result_title = "Dealer busted!"
+            result_lines = [f"The dealer has busted ({dealer_score}).",  f"You have {player_score}.", f"You win €{hb}!"]
+            result_net = hb
+        elif player_score > dealer_score:
+            # Speler heeft hogere score
+            outcome = 2
+            hb = hand_bets[0] if len(hand_bets)>0 else original_bet
+            balance += hb * 2
+            result_title = "You won!"
+            result_lines = [f"The dealer has {dealer_score}, you have {player_score}.", f"You win €{hb}!"]
+            result_net = hb
+        elif dealer_score > player_score:
+            # Dealer heeft hogere score
+            outcome = 1
+            result_title = "You lost..."
+            result_lines = [f"The dealer has {dealer_score}, you have {player_score}.", "You lose."]
+            result_net = - (hand_bets[0] if len(hand_bets)>0 else original_bet)
+        else:
+            # Gelijke score - push
+            outcome = 4
+            hb = hand_bets[0] if len(hand_bets)>0 else original_bet
+            balance += hb
+            result_title = "Push!"
+            result_lines = [f"The dealer has {dealer_score}, you have {player_score}.", "Push."]
+            result_net = 0
+
+        payout_done = True
+        current_bet = original_bet
+        result_time = pygame.time.get_ticks()
+
+def check_split_hand_outcome():
+    global split_hands, dealer_score, outcome, balance, hand_bets, result_lines, result_title, result_net, payout_done, current_bet, result_time, reveal_dealer, dealer_hand, flip_anim, game_deck
+
+    # Reveal dealer en laat hem kaarten trekken
+    if not reveal_dealer:
+        handle_dealer_draws()
+        reveal_dealer = True
+
+        dealer_start = (WIDTH - len(dealer_hand)*CARD_WIDTH)//2
+        hole_card_pos = (dealer_start + CARD_WIDTH, 50)
+        create_flip_animation(dealer_hand[1], hole_card_pos)
+
+    dealer_score = calculate_score(dealer_hand)
+
+    # Bereken uitkomst voor beide handen
+    score_left = calculate_score(split_hands[0])
+    score_right = calculate_score(split_hands[1])
+    net_gain = 0  # Totale winst/verlies
+
+    result_lines = [f"Dealer: {dealer_score}"]
+
+    # LINKER HAND
+    hb_left = hand_bets[0] if len(hand_bets) > 0 else original_bet
+    if score_left > 21:
+        # Bust - verloren
+        result_lines.append(f"Left hand ({score_left}): BUST - lose €{hb_left}")
+        net_gain -= hb_left
+    elif dealer_score > 21 or score_left > dealer_score:
+        # Gewonnen (dealer bust of hogere score)
+        result_lines.append(f"Left hand ({score_left}): WIN - €{hb_left}")
+        net_gain += hb_left
+        balance += hb_left * 2  # Inzet terug + winst
+    elif score_left < dealer_score:
+        # Verloren (lagere score)
+        result_lines.append(f"Left hand ({score_left}): LOSE - €{hb_left}")
+        net_gain -= hb_left
+    else:
+        # Push (gelijke score)
+        result_lines.append(f"Left hand ({score_left}): PUSH")
+        balance += hb_left  # Inzet terug
+
+    # RECHTER HAND
+    hb_right = hand_bets[1] if len(hand_bets) > 1 else original_bet
+    if score_right > 21:
+        # Bust - verloren
+        result_lines.append(f"Right hand ({score_right}): BUST - lose €{hb_right}")
+        net_gain -= hb_right
+    elif dealer_score > 21 or score_right > dealer_score:
+        # Gewonnen
+        result_lines.append(f"Right hand ({score_right}): WIN - €{hb_right}")
+        net_gain += hb_right
+        balance += hb_right * 2
+    elif score_right < dealer_score:
+        # Verloren
+        result_lines.append(f"Right hand ({score_right}): LOSE - €{hb_right}")
+        net_gain -= hb_right
+    else:
+        # Push
+        result_lines.append(f"Right hand ({score_right}): PUSH")
+        balance += hb_right
+
+    # TOTAAL RESULTAAT
+    result_lines.append("")  # Lege regel voor spacing
+    if net_gain > 0:
+        result_lines.append(f"Total: WIN €{net_gain}!")
+        result_title = "You won!"
+    elif net_gain < 0:
+        result_lines.append(f"Total: LOSE €{abs(net_gain)}")
+        result_title = "You lost..."
+    else:
+        result_lines.append("Total: PUSH")
+        result_title = "Push!"
+
+    payout_done = True
+    outcome = 1  # Zet outcome zodat popup verschijnt
+    current_bet = original_bet
+    result_time = pygame.time.get_ticks()
+
+
 game_deck = copy.deepcopy(one_deck * decks) # Maak een nieuw deck met alle kaarten
 
-# Hoofdloop variabelen
 run = True
 show_bet_popup = False
 payout_done = False
@@ -714,24 +1229,9 @@ while run:
     buttons = [] # Lijst voor knoppen
 
     # UPDATE ANIMATIES
-    # Update alle actieve kaart animaties
-    for anim in animations[:]:  # [:] maakt een kopie zodat we veilig kunnen verwijderen
-        anim.update()  # Update de animatie voor dit frame
-        if not anim.active:
-            # Verwijder voltooide animaties
-            animations.remove(anim)
-    
-    # Update flip animatie (voor dealer's hole card)
-    if flip_anim:
-        flip_anim.update()
-        if not flip_anim.active:
-            flip_anim = None  # Verwijder als voltooid
-    
-    # Check of dealing klaar is (alle animaties voltooid)
-    if dealing and len(animations) == 0:
-        dealing = False
+    update_animations()
 
-    # SCHERM SELECTOR
+    # MAIN MENU
     if game_state == "menu":
         buttons = draw_menu()
     elif game_state == "rules":
@@ -754,507 +1254,58 @@ while run:
 
         # MOUSE CLICK EVENT
         if event.type == pygame.MOUSEBUTTONDOWN:
-            # MENU KNOPPEN
             if game_state == "menu":
-                if buttons and buttons[0].collidepoint(event.pos):  # Start knop
-                    # Pas inzet aan als saldo lager is dan max_bet
-                    if balance < max_bet:
-                        current_bet = min(current_bet, balance)
-                    game_state = "playing"
-                    show_bet_popup = True
-                    active = False
-                    outcome = 0
-                    my_hand, dealer_hand = [], []
-                elif buttons and buttons[1].collidepoint(event.pos):  # Rules knop
-                    game_state = "rules"
-                elif buttons and buttons[2].collidepoint(event.pos):  # Quit knop
-                    run = False
-                # Bankrupt popup quit knop
-                if bankrupt_popup and len(buttons) >= 4 and buttons[3].collidepoint(event.pos):
-                    run = False
-
-            # RULES SCHERM
+                run = handle_menu_click(event.pos)
             elif game_state == "rules":
-                if buttons and buttons[0].collidepoint(event.pos):  # Back knop
-                    game_state = "menu"
-
-            # PLAYING SCHERM
+                handle_rules_click(event.pos)
             elif game_state == "playing":
                 if show_bet_popup and buttons:
-                    # BET POPUP KNOPPEN
-                    if buttons[0].collidepoint(event.pos):  # Plus knop
-                        # Verhoog inzet met €100
-                        effective_max = balance if balance < max_bet else max_bet
-                        if current_bet + 100 <= effective_max:
-                            current_bet = min(current_bet + 100, effective_max)
-                        else:
-                            current_bet = effective_max
-                    elif buttons[1].collidepoint(event.pos):  # Min knop
-                        # Verlaag inzet met €100
-                        current_bet = max(current_bet - 100, min_bet)
-                    elif buttons[2].collidepoint(event.pos):  # Deal knop
-                        # Start nieuwe ronde
-                        effective_max = balance if balance < max_bet else max_bet
-                        if current_bet > effective_max:
-                            current_bet = effective_max
-                        if current_bet <= balance:
-                            # Trek inzet af van saldo
-                            balance -= current_bet
-                            original_bet = current_bet
-                            hand_bets = [original_bet]
-                            
-                            # Reset alle game variabelen
-                            active = True
-                            hand_active = True
-                            initial_deal = True
-                            reveal_dealer = False
-                            outcome = 0
-                            split_mode = False
-                            split_hands = []
-                            current_hand_index = 0
-                            double_down_used = False
-                            show_bet_popup = False
-                            
-                            game_deck = copy.deepcopy(one_deck * decks) # Maak nieuw deck
-                            
-                            # Reset animaties
-                            result_time = None
-                            animations.clear()
-                            flip_anim = None
-                            dealing = False
+                    handle_bet_popup_click(event.pos)
                 elif outcome != 0 and buttons:
-                    # RESULTAAT POPUP KNOPPEN
-                    if buttons[0].collidepoint(event.pos):  # New game knop
-                        # Start nieuwe ronde
-                        show_bet_popup = True
-                        outcome = 0
-                        my_hand, dealer_hand = [], []
-                        payout_done = False
-                        split_mode = False
-                        split_hands = []
-                        current_bet = original_bet
-                        current_hand_index = 0
-                        hand_bets = []
-                        hand_active = False
-                        reveal_dealer = False
-                        result_time = None
-                        result_title = ""
-                        result_lines = []
-                        result_net = 0
-                        animations.clear()
-                        flip_anim = None
-                        dealing = False
-                    elif buttons[1].collidepoint(event.pos):  # Menu knop
-                        # Terug naar hoofdmenu
-                        game_state = "menu"
-                        show_bet_popup = False
-                        my_hand, dealer_hand = [], []
-                        outcome = 0
-                        reveal_dealer = False
-                        player_score = 0
-                        dealer_score = 0
-                        split_mode = False
-                        split_hands = []
-                        hand_bets = []
-                        result_time = None
-                        result_title = ""
-                        result_lines = []
-                        result_net = 0
-                        animations.clear()
-                        flip_anim = None
-                        dealing = False
+                    handle_result_popup_click(event.pos)
 
         # KEYBOARD CONTROLS
         if event.type == pygame.KEYDOWN and game_state == "playing" and active and hand_active and not show_bet_popup and not dealing:
-            # ENTER - HIT
-            if event.key == pygame.K_RETURN:
-                if split_mode:
-                    # Split mode: pak kaart voor actieve hand
-                    split_hands[current_hand_index], game_deck = deal_cards(split_hands[current_hand_index], game_deck)
-                    
-                    # Bereken positie voor nieuwe kaart
-                    all_hands = split_hands
-                    hand_y = HEIGHT//2 + 50
-                    spacing_between_hands = 80
-                    total_width = len(all_hands[0])*CARD_WIDTH + spacing_between_hands + len(all_hands[1])*CARD_WIDTH
-                    start_x = (WIDTH - total_width)//2
-                    
-                    if current_hand_index == 0:
-                        hand_x = start_x
-                    else:
-                        hand_x = start_x + len(all_hands[0])*CARD_WIDTH + spacing_between_hands
-                    
-                    card_x = hand_x + (len(split_hands[current_hand_index])-1)*CARD_WIDTH
-                    create_deal_animation(split_hands[current_hand_index][-1], (card_x, hand_y))
-                    
-                    # Check voor bust
-                    sc = calculate_score(split_hands[current_hand_index])
-                    if sc > 21:  # Bust - over 21
-                        hand_active = False
-                else:
-                    # Normale hand: pak kaart
-                    my_hand, game_deck = deal_cards(my_hand, game_deck)
-                    hand_y = HEIGHT//2 + 50
-                    hand_x = (WIDTH - len(my_hand)*CARD_WIDTH)//2
-                    card_x = hand_x + (len(my_hand)-1)*CARD_WIDTH
-                    create_deal_animation(my_hand[-1], (card_x, hand_y))
-                    
-                    player_score = calculate_score(my_hand)
-                    if player_score > 21:  # Bust
-                        hand_active = False
-                        reveal_dealer = True
-
-            # SPACE - STAND
-            elif event.key == pygame.K_SPACE:
-                hand_active = False
-                # Reveal dealer als we klaar zijn met beide handen (of geen split)
-                if not split_mode or (split_mode and current_hand_index == 1):
-                    reveal_dealer = True
-                    # Maak flip animatie voor dealer's hole card
-                    dealer_start = (WIDTH - len(dealer_hand)*CARD_WIDTH)//2
-                    hole_card_pos = (dealer_start + CARD_WIDTH, 50)
-                    create_flip_animation(dealer_hand[1], hole_card_pos)
-
-            # TAB - DOUBLE DOWN
-            elif event.key == pygame.K_TAB:
-                if split_mode:
-                    # Double down in split mode
-                    active_hand = split_hands[current_hand_index]
-                    if len(active_hand) == 2:
-                        hb = hand_bets[current_hand_index] if current_hand_index < len(hand_bets) else original_bet
-                        if balance >= hb and not double_down_used:
-                            # Trek geld af en verdubbel inzet
-                            balance -= hb
-                            hand_bets[current_hand_index] = hb * 2
-                            
-                            # Pak één kaart
-                            split_hands[current_hand_index], game_deck = deal_cards(split_hands[current_hand_index], game_deck)
-                            
-                            # Bereken positie voor nieuwe kaart
-                            all_hands = split_hands
-                            hand_y = HEIGHT//2 + 50
-                            spacing_between_hands = 80
-                            total_width = len(all_hands[0])*CARD_WIDTH + spacing_between_hands + len(all_hands[1])*CARD_WIDTH
-                            start_x = (WIDTH - total_width)//2
-                            
-                            if current_hand_index == 0:
-                                hand_x = start_x
-                            else:
-                                hand_x = start_x + len(all_hands[0])*CARD_WIDTH + spacing_between_hands
-                            
-                            card_x = hand_x + (len(split_hands[current_hand_index])-1)*CARD_WIDTH
-                            create_deal_animation(split_hands[current_hand_index][-1], (card_x, hand_y))
-                            
-                            double_down_used = True
-                            hand_active = False
-                            # Reveal dealer als we bij tweede hand zijn
-                            if current_hand_index == 1:
-                                reveal_dealer = True
-                                dealer_start = (WIDTH - len(dealer_hand)*CARD_WIDTH)//2
-                                hole_card_pos = (dealer_start + CARD_WIDTH, 50)
-                                create_flip_animation(dealer_hand[1], hole_card_pos)
-                else:
-                    # Double down in normale hand
-                    if len(my_hand) == 2 and not double_down_used and balance >= original_bet:
-                        # Trek geld af en verdubbel inzet
-                        balance -= original_bet
-                        if len(hand_bets) == 0:
-                            hand_bets = [original_bet]
-                        hand_bets[0] = hand_bets[0] * 2
-                        
-                        # Pak één kaart
-                        my_hand, game_deck = deal_cards(my_hand, game_deck)
-                        hand_y = HEIGHT//2 + 50
-                        hand_x = (WIDTH - len(my_hand)*CARD_WIDTH)//2
-                        card_x = hand_x + (len(my_hand)-1)*CARD_WIDTH
-                        create_deal_animation(my_hand[-1], (card_x, hand_y))
-                        
-                        double_down_used = True
-                        hand_active = False
-                        reveal_dealer = True
-                        # Maak flip animatie voor dealer's hole card
-                        dealer_start = (WIDTH - len(dealer_hand)*CARD_WIDTH)//2
-                        hole_card_pos = (dealer_start + CARD_WIDTH, 50)
-                        create_flip_animation(dealer_hand[1], hole_card_pos)
-
-            # E - SPLIT
-            elif event.key == pygame.K_e and not split_mode and len(my_hand) == 2 and balance >= original_bet:
-                # Check of we kunnen splitten
-                if can_split(my_hand) and balance >= original_bet:
-                    # Trek geld af voor tweede hand
-                    balance -= original_bet
-                    
-                    # Activeer split mode
-                    split_mode = True
-                    split_hands = [[my_hand[0]], [my_hand[1]]]  # Maak twee handen met elk één kaart
-                    hand_bets = [original_bet, original_bet]  # Beide handen hebben dezelfde inzet
-                    my_hand = split_hands[0]
-                    current_hand_index = 0  # Start met eerste hand
-                    
-                    # Deel eerste kaart aan eerste hand
-                    split_hands[0], game_deck = deal_cards(split_hands[0], game_deck)
-                    
-                    # Bereken positie voor nieuwe kaart
-                    all_hands = split_hands
-                    hand_y = HEIGHT//2 + 50
-                    spacing_between_hands = 80
-                    total_width = len(all_hands[0])*CARD_WIDTH + spacing_between_hands + len(all_hands[1])*CARD_WIDTH
-                    start_x = (WIDTH - total_width)//2
-                    hand_x = start_x
-                    card_x = hand_x + CARD_WIDTH
-                    create_deal_animation(split_hands[0][-1], (card_x, hand_y))
-                    
-                    hand_active = True
-                    reveal_dealer = False
+            handle_playing_keydown(event.key)
 
     # GAME LOGIC
     if game_state == "playing" and active and not show_bet_popup:
-        # INITIAL DEAL - Deel de eerste kaarten
         if initial_deal:
-            # Bereken posities voor kaarten
-            dealer_start = (WIDTH - 2*CARD_WIDTH)//2
-            hand_y = HEIGHT//2 + 50
-            player_start = (WIDTH - 2*CARD_WIDTH)//2
-            
-            # Deel 2 kaarten aan speler en dealer
-            for i in range(2):
-                # Deel kaart aan speler
-                my_hand, game_deck = deal_cards(my_hand, game_deck)
-                # Deel kaart aan dealer
-                dealer_hand, game_deck = deal_cards(dealer_hand, game_deck)
-                
-                # Maak animaties voor beide kaarten
-                # Elke kaart heeft steeds delay meer dan de vorige
-                create_deal_animation(my_hand[i], (player_start + i*CARD_WIDTH, hand_y), delay=i*500)
-                
-                # Tweede dealer kaart is verborgen (achterkant)
-                is_back = (i == 1)
-                create_deal_animation(dealer_hand[i], (dealer_start + i*CARD_WIDTH, 50), is_back=is_back, delay=i*200)
-            
-            initial_deal = False
-
-            # Initialiseer hand_bets als we niet in split mode zijn
-            if not split_mode:
-                hand_bets = [original_bet]
-
-            # Bereken scores
-            player_score = calculate_score(my_hand)
-            dealer_score = calculate_score(dealer_hand)
-            
-            # CHECK VOOR BLACKJAC
-            if player_score == 21 and dealer_score != 21:
-                # Speler heeft blackjack! Betaalt 3:2 (1.5x inzet)
-                outcome = 5
-                balance += int(original_bet * 2.25)  # Inzet terug + 1.5x winst
-                hand_active = False
-                reveal_dealer = True
-                payout_done = True
-                result_time = pygame.time.get_ticks()
-                result_title = "Blackjack!"
-                result_lines = [f"The dealer has {dealer_score}, you have {player_score}.", f"You win €{int(original_bet * 1.25)}!"]
-                result_net = int(original_bet * 1.25)
-            elif dealer_score == 21 and player_score != 21:
-                # Dealer heeft blackjack, speler verliest
-                outcome = 1
-                hand_active = False
-                reveal_dealer = True
-                payout_done = True
-                result_time = pygame.time.get_ticks()
-                result_title = "You lost..."
-                result_lines = [f"The dealer has {dealer_score}, you have {player_score}.", "You lose."]
-                result_net = -original_bet
-            elif dealer_score == 21 and player_score == 21:
-                # Beide hebben blackjack - push (gelijkspel)
-                outcome = 4
-                balance += original_bet  # Inzet terug
-                payout_done = True
-                hand_active = False
-                reveal_dealer = True
-                result_time = pygame.time.get_ticks()
-                result_title = "Push!"
-                result_lines = [f"The dealer has {dealer_score}, you have {player_score}.","Push."]
-                result_net = 0
+            initial_deal_cards()
 
         # Update player score
         if not split_mode:
             player_score = calculate_score(my_hand)
 
-        # DEALER DRAWS
-        if reveal_dealer and outcome == 0 and not dealing:
-            dealer_score = calculate_score(dealer_hand)
-            while dealer_score < 17:
-                # Dealer trekt een kaart
-                dealer_hand, game_deck = deal_cards(dealer_hand, game_deck)
-                
-                # Maak animatie voor nieuwe kaart
-                dealer_start = (WIDTH - len(dealer_hand)*CARD_WIDTH)//2
-                card_x = dealer_start + (len(dealer_hand)-1)*CARD_WIDTH
-                create_deal_animation(dealer_hand[-1], (card_x, 50), delay=300)
-                
-                # Herbereken score
-                dealer_score = calculate_score(dealer_hand)
+        if outcome == 0 and not dealing:
+            # Controleer of we een outcome moeten bepalen
+            if not hand_active and reveal_dealer:
+                if split_mode and current_hand_index == 0:
+                    # Ga naar tweede hand in split mode
+                    current_hand_index = 1
+                    hand_active = True
+                    reveal_dealer = False
 
-        if not hand_active and outcome == 0 and not dealing:
-            if split_mode and current_hand_index == 0:
-                # Ga naar tweede hand
-                current_hand_index = 1
-                
-                # Deel kaart aan tweede hand als die nog maar 1 kaart heeft
-                if len(split_hands[1]) == 1:
-                    split_hands[1], game_deck = deal_cards(split_hands[1], game_deck)
-                    
-                    # Bereken positie voor nieuwe kaart
-                    all_hands = split_hands
-                    hand_y = HEIGHT//2 + 50
-                    spacing_between_hands = 80
-                    total_width = len(all_hands[0])*CARD_WIDTH + spacing_between_hands + len(all_hands[1])*CARD_WIDTH
-                    start_x = (WIDTH - total_width)//2
-                    hand_x = start_x + len(split_hands[0])*CARD_WIDTH + spacing_between_hands
-                    card_x = hand_x + CARD_WIDTH
-                    create_deal_animation(split_hands[1][-1], (card_x, hand_y))
-                
-                # Activeer tweede hand
-                hand_active = True
-                reveal_dealer = False
-            else:
-                # BEPAAL UITKOMST (beide handen klaar of geen split)
-                if split_mode:
-                    # Reveal dealer en laat hem kaarten trekken
-                    if not reveal_dealer:
-                        dealer_score = calculate_score(dealer_hand)
-                        dealer_start = (WIDTH - len(dealer_hand)*CARD_WIDTH)//2
-                        hole_card_pos = (dealer_start + CARD_WIDTH, 50)
-                        create_flip_animation(dealer_hand[1], hole_card_pos)
-                        reveal_dealer = True
-                        
-                        # Dealer trekt kaarten tot 17 of hoger
-                        while dealer_score < 17:
-                            dealer_hand, game_deck = deal_cards(dealer_hand, game_deck)
-                            dealer_start = (WIDTH - len(dealer_hand)*CARD_WIDTH)//2
-                            card_x = dealer_start + (len(dealer_hand)-1)*CARD_WIDTH
-                            create_deal_animation(dealer_hand[-1], (card_x, 50), delay=300)
-                            dealer_score = calculate_score(dealer_hand)
-                    
-                    # Bereken uitkomst voor beide handen
-                    score_left = calculate_score(split_hands[0])
-                    score_right = calculate_score(split_hands[1])
-                    net_gain = 0  # Totale winst/verlies
-                    
-                    result_lines = [f"Dealer: {dealer_score}"]
-                    
-                    # LINKER HAND
-                    hb_left = hand_bets[0] if len(hand_bets) > 0 else original_bet
-                    if score_left > 21:
-                        # Bust - verloren
-                        result_lines.append(f"Left hand ({score_left}): BUST - lose €{hb_left}")
-                        net_gain -= hb_left
-                    elif dealer_score > 21 or score_left > dealer_score:
-                        # Gewonnen (dealer bust of hogere score)
-                        result_lines.append(f"Left hand ({score_left}): WIN - €{hb_left}")
-                        net_gain += hb_left
-                        balance += hb_left * 2  # Inzet terug + winst
-                    elif score_left < dealer_score:
-                        # Verloren (lagere score)
-                        result_lines.append(f"Left hand ({score_left}): LOSE - €{hb_left}")
-                        net_gain -= hb_left
-                    else:
-                        # Push (gelijke score)
-                        result_lines.append(f"Left hand ({score_left}): PUSH")
-                        balance += hb_left  # Inzet terug
-                    
-                    # RECHTER HAND
-                    hb_right = hand_bets[1] if len(hand_bets) > 1 else original_bet
-                    if score_right > 21:
-                        # Bust - verloren
-                        result_lines.append(f"Right hand ({score_right}): BUST - lose €{hb_right}")
-                        net_gain -= hb_right
-                    elif dealer_score > 21 or score_right > dealer_score:
-                        # Gewonnen
-                        result_lines.append(f"Right hand ({score_right}): WIN - €{hb_right}")
-                        net_gain += hb_right
-                        balance += hb_right * 2
-                    elif score_right < dealer_score:
-                        # Verloren
-                        result_lines.append(f"Right hand ({score_right}): LOSE - €{hb_right}")
-                        net_gain -= hb_right
-                    else:
-                        # Push
-                        result_lines.append(f"Right hand ({score_right}): PUSH")
-                        balance += hb_right
-                    
-                    # TOTAAL RESULTAAT
-                    result_lines.append("")  # Lege regel voor spacing
-                    if net_gain > 0:
-                        result_lines.append(f"Total: WIN €{net_gain}!")
-                        result_title = "You won!"
-                    elif net_gain < 0:
-                        result_lines.append(f"Total: LOSE €{abs(net_gain)}")
-                        result_title = "You lost..."
-                    else:
-                        result_lines.append("Total: PUSH")
-                        result_title = "Push!"
-                    
-                    payout_done = True
-                    outcome = 1  # Zet outcome zodat popup verschijnt
-                    current_bet = original_bet
-                    result_time = pygame.time.get_ticks()
+                    # Deel kaart aan tweede hand als die nog maar 1 kaart heeft
+                    if len(split_hands[1]) == 1:
+                        split_hands[1], game_deck = deal_cards(split_hands[1], game_deck)
+
+                        # Bereken positie voor nieuwe kaart
+                        all_hands = split_hands
+                        hand_y = HEIGHT//2 + 50
+                        spacing_between_hands = 80
+                        total_width = len(all_hands[0])*CARD_WIDTH + spacing_between_hands + len(all_hands[1])*CARD_WIDTH
+                        start_x = (WIDTH - total_width)//2
+                        hand_x = start_x + len(split_hands[0])*CARD_WIDTH + spacing_between_hands
+                        card_x = hand_x + CARD_WIDTH
+                        create_deal_animation(split_hands[1][-1], (card_x, hand_y))
+                elif split_mode and current_hand_index == 1:
+                    # Klaar met beide handen in split mode
+                    check_split_hand_outcome()
                 else:
-                    player_score = calculate_score(my_hand)
-                    
-                    if player_score > 21:
-                        # Speler bust - verloren
-                        outcome = 1
-                        result_title = "You busted!"
-                        result_lines = [f"You have busted ({player_score}).", "You lose."]
-                        result_net = -hand_bets[0] if len(hand_bets)>0 else -original_bet
-                        payout_done = True
-                        result_time = pygame.time.get_ticks()
-                    else:
-                        # Speler niet bust - vergelijk met dealer
-                        if not reveal_dealer:
-                            # Dealer trekt kaarten
-                            dealer_score = calculate_score(dealer_hand)
-                            while dealer_score < 17:
-                                dealer_hand, game_deck = deal_cards(dealer_hand, game_deck)
-                                dealer_start = (WIDTH - len(dealer_hand)*CARD_WIDTH)//2
-                                card_x = dealer_start + (len(dealer_hand)-1)*CARD_WIDTH
-                                create_deal_animation(dealer_hand[-1], (card_x, 50), delay=300)
-                                dealer_score = calculate_score(dealer_hand)
-                        
-                        if dealer_score > 21:
-                            # Dealer bust - speler wint
-                            outcome = 2
-                            hb = hand_bets[0] if len(hand_bets)>0 else original_bet
-                            balance += hb * 2
-                            result_title = "Dealer busted!"
-                            result_lines = [f"The dealer has busted ({dealer_score}).",  f"You have {player_score}.", f"You win €{hb}!"]
-                            result_net = hb
-                        elif player_score > dealer_score:
-                            # Speler heeft hogere score - wint
-                            outcome = 2
-                            hb = hand_bets[0] if len(hand_bets)>0 else original_bet
-                            balance += hb * 2
-                            result_title = "You won!"
-                            result_lines = [f"The dealer has {dealer_score}, you have {player_score}.", f"You win €{hb}!"]
-                            result_net = hb
-                        elif dealer_score > player_score:
-                            # Dealer heeft hogere score - speler verliest
-                            outcome = 1
-                            result_title = "You lost..."
-                            result_lines = [f"The dealer has {dealer_score}, you have {player_score}.", "You lose."]
-                            result_net = - (hand_bets[0] if len(hand_bets)>0 else original_bet)
-                        else:
-                            # Gelijke score - push
-                            outcome = 4
-                            hb = hand_bets[0] if len(hand_bets)>0 else original_bet
-                            balance += hb
-                            result_title = "Push!"
-                            result_lines = [f"The dealer has {dealer_score}, you have {player_score}.", "Push."]
-                            result_net = 0
-                        
-                        payout_done = True
-                        current_bet = original_bet
-                        result_time = pygame.time.get_ticks()
+                    # Normale hand of eerste check na deal
+                    if len(my_hand) > 0:  # Zorg ervoor dat we kaarten hebben
+                        check_normal_hand_outcome()
 
     # CHECK VOOR BANKRUPT
     if balance <= 0 and not bankrupt_popup:
@@ -1262,4 +1313,5 @@ while run:
         game_state = "menu"
 
     pygame.display.flip()
+
 pygame.quit()

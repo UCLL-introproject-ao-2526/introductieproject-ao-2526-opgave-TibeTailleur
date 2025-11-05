@@ -1,1 +1,1 @@
-SHIFT + LEFTARROW
+Shift+Left

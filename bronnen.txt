@@ -2,8 +2,8 @@ Reflectie bij video: https://youtu.be/csyL9EC0S0c
 
 - Iedereen maakt fouten, zelfs ervaren programmeurs, bugs en fouten horen erbij.
 - De mythe van de “geniale programmeur” is geeft een fout beeld. Niemand is echt 100x beter dan de rest, samenwerken en leren van anderen is veel belangrijker.
-- Sollicitaties met puzzelvragen of instinkers zeggen niets over iemands echte vaardigheden. Bedrijven die dat doen, begrijpen vaak niet wat goed teamwork is.
-- Programmeren moet leuk en creatief zijn. Mensen leren beter door te experimenteren, dingen te proberen en zelf te ontdekken in plaats van droge theorie.
+- Sollicitaties met puzzelvragen of instinkers zeggen niets over iemands echte vaardigheden.
+- Programmeren moet leuk en creatief zijn. Mensen leren beter door te experimenteren, dingen te proberen en zelf te ontdekken in plaats van pure theorie.
 - Teamcommunicatie bepaalt de kwaliteit van code. Als teams slecht samenwerken, wordt de software daar meestal ook slechter van.
 - Diversiteit in teams zorgt voor meer innovatie en een gezondere werksfeer.
 - Veel gebruikte werkmethodes (zoals Waterfall) zijn verouderd en zorgen voor stress en inefficiëntie.

@@ -1,0 +1,1 @@
+magick document.pdf page-%d.png

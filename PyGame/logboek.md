@@ -76,3 +76,26 @@ Ook waren er nog wat dingen die ik eerder gestart was maar nooit had afgewerkt, 
 
 Uiteindelijk lijkt alles nu goed te werken. Er zitten vast nog wat kleine schoonheidsfoutjes in (zoals dat je je winst al ziet adhv je balance voor je de pop-up ziet), of dingen waar ik over gekeken heb, maar al bij al ben ik wel tevreden.  
 Na al die uren vind ik dat het een leuk spelletje geworden is. Al ben ik eerlijk gezegd wel wat beu van games maken, maar het was wél superleerrijk, vooral omdat je constant moet opzoeken en proberen tot het eindelijk werkt zoals in je hoofd.
+
+<br>
+
+## 2 november 2025 (2-3 uur)
+
+Vrijdag kreeg ik de feedback op mijn project, en eerlijk gezegd vond ik die heel helder en aangenaam. Het was ruim genoeg om mee aan de slag te gaan, zonder dat elk klein detail werd aangehaald. Dat gaf me wat vrijheid om zelf na te denken, iets wat ik zeker apprecieer bij een eerste groter project. Het belangrijkste punt vond ik om alles beter te structureren met functies, en de hoofdloop (`while run`) zo kort mogelijk te houden. Dat klonk logisch, en deed me zelfs een beetje denken aan hoe ik vroeger in JavaScript werkte. Dus dat was mijn eerste taak van de dag.
+
+Het herstructureren in functies ging op zich wel goed, maar het vroeg veel denkwerk: wat hoort samen, wat roept wat aan, etc. Ik werkte telkens één functie uit, testte die, en ging dan door naar de volgende. Zoals verwacht werkte geen enkele test van de eerste keer, maar dat hoort er ook bij. Uiteindelijk werd de code wel veel overzichtelijker.
+
+Eén bug hield me wel even bezig: de dealer die blijft trekken tot hij 17 of hoger heeft. Daar zat iets fout, want de score werd niet telkens geüpdatet binnen de loop. Na een halfuurtje proberen en vloeken had ik het uiteindelijk door. De score werd simpelweg niet geüpdate in de loop 😅.
+
+Als laatste wou ik nog de animaties versimpelen, zoals aangeraden in de feedback. Alleen, om eerlijk te zijn, dat was iets te hoog gegrepen op dit moment. Daarom heb ik dit deel laten herwerken door V0. Ik heb het dus niet zelf gemaakt, maar ik vond het leuker als de animaties er wel in bleven zitten.
+
+<br>
+
+## Conclusie
+
+Voor mij was dit project heel leerrijk, maar zeker niet makkelijk. Het is ook leuk dat je veel vrijheid hebt, dat geeft minder druk naar perfectie. Het heeft me vooral geleerd dat overzicht
+Het was een pittig project, maar wel één van de meest leerrijke opdrachten tot nu toe. Ik heb vooral geleerd hoe belangrijk het is om overzicht te houden en gestructureerd te werken. In de oefeningen van Programming 1 bijvoorbeeld schrijf je meestal korte stukjes code, maar hier moest alles blijven samenwerken.
+
+Ik heb ook veel geleerd over hoe ik AI op een nuttige manier kan inzetten. Niet als vervanging, maar als hulpmiddel: om ideeën te krijgen, bugs te vinden of logica te verbeteren. Toch heb ik ook gemerkt dat het weinig nut heeft als ik niet begrijp wat de code doet. Dan verlies ik alleen maar meer tijd.
+
+Niet alles heb ik zelf kunnen afwerken, zeker de animaties niet, maar daar ben ik eigenlijk oké mee. Ik heb mijn grenzen beter leren kennen, en weet nu waar ik nog in kan groeien. Als ik het opnieuw zou doen, zou ik wel wat kleiner beginnen en stap per stap uitbreiden. Minder hooi op mijn vork nemen dus, en telkens bekijken of iets haalbaar is voor ik eraan begin.
